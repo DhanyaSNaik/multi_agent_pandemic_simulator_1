@@ -154,8 +154,26 @@ CLASS PandemicMAS:
 
     # --- Central Reward Calculation ---
     infection_count = sum(a.health == "infected" for a in agents)
+    death_count = sum(a.health == "dead" for a in agents)
+    vaccination_rate = sum(a.vaccinated == 2 for a in agents)
+
+    policy_cost=sum([
+        self.lock_down_level*0.5,
+        self.mask_mamdate*0.2
+        self.vaccination_drive*0.1
+    ])
+
+    social_score=sum(
+        3 if 3 <= agent.social_contacts <= 7 else
+        -2 if agent.social_contacts > 7 else
+        -2 for agent in self.agents
+    ) / len(self.agents)
+
     reward = (0.6 * self.economy
               - 1.5 * infection_count
-              - 5.0 * sum(a.health == "dead"))
+              - 5.0 * death_count
+              -0.3 * policy_cost
+              +2.0 * vaccination_rate
+              +0.5 * social_score)
 
     return self.get_observations(), reward, done

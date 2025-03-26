@@ -99,3 +99,6 @@ class CitizenAgent:
                     self.health = "recovered"
                 else:
                     self.health = "dead"
+    
+    def agent_reward(self):
+                       

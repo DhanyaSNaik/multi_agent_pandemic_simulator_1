@@ -20,33 +20,56 @@ class MultiCitizenAgent(gym.Env):
         'render.modes' : ['human', 'rgb_array']
     }
 
-    # this code was built from modifying "Restack - Multi-Agents OpenAI Gym Overview"
-    # https://www.restack.io/p/multi-agents-knowledge-multi-agent-openai-gym-cat-ai
-    def __init__(self):
+    
+    def __init__(self , num_agents=3):
         # super allows us to call methods from a parent class within a child class
-        # ! not sure why it calls MultiCitizenAgent in the parameter...
         super(MultiCitizenAgent, self).__init__()
 
-        # right now, we can start with 3 discrete actions
-        # ! figure out how we can have different actions rather than just discrete space - 
-        self.action_space = spaces.Discrete(3)  # Example: three actions - vaccinate (0, 1, 2), mask (0, 1), social distance (cont 0-1), (later add number of)
+        self.num_agents = num_agents
+        action_low = np.array([0,1,0]) # can add more features but stuck to 3 for now as not sure if it works
+        action_high = np.array([1,8,2])
 
-        # ! not sure about this one
-        self.observation_space = spaces.Box(low=0, high=1, shape=(4,), dtype=float)
+        self.action_space = spaces.Box(low = action_low, high = action_high, dtype=np.float)
+        # continuous action and observation spaces
+        self.observation_space = spaces.Box(low = action_low, high = action_high, shape=(3*num_agents,), dtype=float)
 
-        # Initialize state variables
-        self.health = "susceptible"  # [susceptible, exposed, infected, recovered, dead]
-        self.vaccinated = 0          # 0=unvaccinated, 1=partial, 2=fully
-        self.mask_usage = 0.0        # 0=never, 1=always
-        self.social_contacts = 5     # Daily interactions
-        self.income_level = 1.0      # Economic contribution
-        self.disease_days = 0
-        self.age_factor = np.random.uniform(0, 1)  # 0=young, 1=elderly
+        # Initaialize all agents as a list of dictionaries
+        self.agents = []
+        for _ in range(self.num_agents):
+            agent = {
+                'health' :'susceptible',  # [susceptible, exposed, infected, recovered, dead]
+                'vaccinated' : 0 ,         # 0=unvaccinated, 1=partial, 2=fully
+                'mask_usage' : 0.0,        # 0=never, 1=always
+                'social_contacts' : 5,     # Daily interactions
+                'income_level' : 1.0,      # Economic contribution
+                'disease_days' : 0,
+                'age_factor' : np.random.uniform(0, 1)  # 0=young, 1=elderly
+            }
+            self.agents.append(agent)
 
+    def step(self, action_n):
+        obs_n = list()
+        reward_n = list()
+        done_n = list()
+        info_n = {'n': []}
+        
+        for i, actions in enumerate(action):
+            agent = self.agents[i]
 
-    def step(self, action):
-        # Implement the logic for taking a step
-        pass
+            agent['mask_usage'] = actions[0]
+            agent['social_contacts'] = max(1,min(8, int(action[1])))
+            agent['vaccinated'] = min(2, max(0, int(action[2])))
+            
+            obs_ = self._get_obs(agent)
+            obs_n.apend(obs)
+
+            reward = self.calc_reward(agent)
+            reward_n.append(reward)
+
+            done = self._is_done(agent)
+            done_n.append(done)
+
+        return obs_n, reward_n, done_n, info_n
 
     def reset(self):
         # Reset the environment
@@ -79,6 +102,11 @@ def _get_info(self):
     #     )
     # }
 
+def calc_reward(self):
+    pass
+
+def _is_done(self):
+    pass
 # EXAMPLE:
 
 # def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):

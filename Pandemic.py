@@ -105,6 +105,9 @@ class InfectionEnv(gym.Env):
         # Update economy
         self._calculate_economy()
 
+        #Calculate average behaviour
+        self.calculate_average_behaviour()
+
         # Compute observations and reward
         obs = self._get_obs()
         reward = self._calculate_reward(action)
@@ -164,6 +167,13 @@ class InfectionEnv(gym.Env):
                 contribution = p.income_level * (0.2 + 0.8 * (p.health == "susceptible"))
             total += contribution
         self.economy = (total / self.num_people) * 100
+
+    def calculate_average_behaviour(self): #calculates average behaviour every 14 days
+        if self.current_step%14==0:
+            avg_mask_usage = np.mean([p.mask_usage for p in self.people if p.health!="dead"])
+            avg_vaccination = np.mean([p.vaccinated for p in self.people if p.health!="dead"])
+            return avg_mask_usage, avg_vaccination
+        return None, None
 
     def _calculate_reward(self, action):
         infected = sum(p.health == "infected" for p in self.people)

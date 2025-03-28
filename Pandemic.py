@@ -123,7 +123,6 @@ class InfectionEnv(gym.Env):
         def _calculate_reward(self):
             state = self.get_state()  # Get current state of the agent
             # Assuming state contains (health status, mask usage, social contacts, vaccination status)
-<<<<<<< HEAD
 
             # **Infection**
             infection_penalty = -self.fear_covid * self.status_code()  # Penalty for infection based on fear of COVID
@@ -188,7 +187,7 @@ class InfectionEnv(gym.Env):
             state = self.get_state()
             action = self.choose_action()
 
-=======
+
 
             # **Infection**
             infection_penalty = -self.fear_covid * self.status_code()  # Penalty for infection based on fear of COVID
@@ -253,7 +252,6 @@ class InfectionEnv(gym.Env):
             state = self.get_state()
             action = self.choose_action()
 
->>>>>>> branch2
             # Apply action
             if action == "increase_mask":
                 self.mask_usage = min(1.0, self.mask_usage + 0.1)
@@ -276,7 +274,6 @@ class InfectionEnv(gym.Env):
             max_future_q = max([self.q_table.get((new_state, a), 0) for a in self.actions])
             self.q_table[(state, action)] = self.q_table.get((state, action), 0) + \
                 self.alpha * (reward + self.gamma * max_future_q - self.q_table.get((state, action), 0))
-<<<<<<< HEAD
 
             return new_state, reward
 
@@ -298,7 +295,7 @@ class InfectionEnv(gym.Env):
     # terminated = self.current_step >= self.max_steps
     # truncated = all(p.health in ["recovered", "dead"] for p in self.people)
 
-=======
+
 
             return new_state, reward
 
@@ -320,7 +317,6 @@ class InfectionEnv(gym.Env):
     # terminated = self.current_step >= self.max_steps
     # truncated = all(p.health in ["recovered", "dead"] for p in self.people)
 
->>>>>>> branch2
     # return obs, reward, terminated, truncated, {}
 
     def _simulate_interactions(self):
@@ -381,7 +377,6 @@ class InfectionEnv(gym.Env):
                         p.health = "dead"
                         p.infected = False
 
-<<<<<<< HEAD
     # def _calculate_economy(self):
     #     total = 0.0
     #     for p in self.people:
@@ -393,7 +388,7 @@ class InfectionEnv(gym.Env):
     #     self.economy = (total / self.num_people) * 100
 
     
-=======
+
     def _calculate_economy(self):
         total = sum(p.income_level * (0.2 + 0.8 * (p.health == "susceptible")) for p in self.people if p.health!= "dead")
         self.economy = (total / self.num_people) * 100
@@ -412,14 +407,12 @@ class InfectionEnv(gym.Env):
         if self.current_step%14==0:
             avg_mask_usage = np.mean([p.mask_usage for p in self.people if p.health!="dead"])
             avg_vaccination = np.mean([p.vaccinated for p in self.people if p.health!="dead"])
->>>>>>> branch2
 
     def _get_obs(self):
         # statuses = [p.status_code() for p in self.people]
         # return np.array(statuses + [self.economy], dtype=np.float32)
-<<<<<<< HEAD
         
-=======
+
         return np.array(
             [p.status_code() for p in self.people +
             [p.mask_usage for p in self.people] +
@@ -427,7 +420,6 @@ class InfectionEnv(gym.Env):
             [p.social_contacts for p in self.people] +
             [self.economy], dtype = np.float32
         )
->>>>>>> branch2
 
     def render(self, mode='human'):
         status_map = {

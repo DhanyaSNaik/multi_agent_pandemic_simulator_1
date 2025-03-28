@@ -297,7 +297,6 @@ class InfectionEnv(gym.Env):
 
 
 
-            return new_state, reward
 
     # # Simulate disease spread
     # self._simulate_interactions()

@@ -25,6 +25,8 @@ class InfectionEnv(gym.Env):
             "trust_beta": 2,
             "skeptic_mode": 0.3
         }
+        self.avg_mask_usage=0.0
+        self.avg_vaccination=0.0
 
     def reset(self, seed=None, options=None):
         # Initialize people with unique IDs and random income levels
@@ -185,6 +187,71 @@ class InfectionEnv(gym.Env):
             state = self.get_state()
             action = self.choose_action()
 
+
+
+            # **Infection**
+            infection_penalty = -self.fear_covid * self.status_code()  # Penalty for infection based on fear of COVID
+            staying_susceptible_penalty = self.fear_covid * 0.10 * (1 - self.vaccination_status)  # Staying susceptible to infection
+
+            # **Overall Health of the System**
+            # Penalty for number of new infections and deaths in the system (system-wide effects, not individual)
+            overall_health_penalty = -(self.num_infected + self.num_deaths)  # This needs to be tracked in the system
+
+            # **Masking**
+            # Penalty for how annoying masks are (based on the agent's belief)
+            mask_annoyance_penalty = -self.mask_annoyance_factor * self.mask_usage
+            
+            # Positive reward for how close the agent's mask usage is to the system's average mask usage
+            mask_usage_diff = abs(self.mask_usage - self.average_mask_usage())  # Difference from the average
+            mask_usage_reward = max(0, 1 - mask_usage_diff)  # Reward based on closeness to average mask usage
+            
+            # Compliance with the mask mandate based on how much they believe in it
+            mask_compliance_reward = self.mask_usage * self.compliance_mask * 0.1  # Reward for compliance with the mask mandate
+
+            # **Vaccination**
+            # Positive reward for the belief in how bad it is to get COVID (encourages vaccination)
+            vaccination_benefit = self.fear_covid * 0.1 * self.vaccination_status  # Positive reward for vaccination
+            
+            # Penalty for fear of being vaccinated
+            vaccination_fear_penalty = -self.fear_vaccine * (1 - self.vaccination_status)
+            
+            # Reward for family behavior: If the family is anti-vax, the agent might get a positive reward for not vaccinating
+            family_influence_reward = (1 - self.vaccination_status) * (1 - self.family_anti_vax) * self.family_fear_vaccine * 0.1
+            
+            # Positive reward for how close the agent's vaccination status is to the system's average vaccination rate
+            vaccination_usage_diff = abs(self.vaccination_status - self.average_vaccination_usage())  # Difference from the average vaccination
+            vaccination_usage_reward = max(0, 1 - vaccination_usage_diff)  # Reward based on closeness to average vaccination
+
+            # **Social Behavior**
+            # Positive reward for how few social contacts the agent has, to reduce the risk of infection
+            social_penalty = -1 / (1 + self.social_contacts) * self.fear_covid  # Reward for staying isolated
+
+            # Reward for compliance with lockdown behavior, based on the number of social contacts
+            lockdown_compliance_reward = 1 / (1 + self.social_contacts) * self.family_lockdown_compliance * self.fear_covid * 0.1  # Based on family lockdown compliance
+            
+            # Penalty for loneliness (if they have too few social contacts)
+            loneliness_penalty = -self.loneliness_factor / (1 + self.social_contacts)
+
+            # Family behavior: Influence of family beliefs on social contacts
+            family_social_penalty = -self.social_contacts * self.family_lockdown_compliance  # Penalty if family does not comply with lockdown
+
+            # **Final Reward Calculation**
+            total_reward = (
+                infection_penalty + staying_susceptible_penalty + overall_health_penalty +
+                mask_annoyance_penalty + mask_usage_reward + mask_compliance_reward +
+                vaccination_benefit + vaccination_fear_penalty + family_influence_reward +
+                vaccination_usage_reward + social_penalty + lockdown_compliance_reward +
+                loneliness_penalty + family_social_penalty
+            )
+
+            return total_reward
+
+
+        def step(self):
+            """Takes a step in the environment based on Q-learning."""
+            state = self.get_state()
+            action = self.choose_action()
+
             # Apply action
             if action == "increase_mask":
                 self.mask_usage = min(1.0, self.mask_usage + 0.1)
@@ -228,6 +295,27 @@ class InfectionEnv(gym.Env):
     # terminated = self.current_step >= self.max_steps
     # truncated = all(p.health in ["recovered", "dead"] for p in self.people)
 
+
+
+
+    # # Simulate disease spread
+    # self._simulate_interactions()
+
+    # # Update health statuses
+    # self._update_health_status()
+
+        # Update economy
+        #self._calculate_economy()
+
+    # # Compute observations and reward
+    # obs = self._get_obs()
+    # reward = self._calculate_reward(action)
+
+    # # Check termination conditions
+    # self.current_step += 1
+    # terminated = self.current_step >= self.max_steps
+    # truncated = all(p.health in ["recovered", "dead"] for p in self.people)
+
     # return obs, reward, terminated, truncated, {}
 
     def _simulate_interactions(self):
@@ -240,7 +328,26 @@ class InfectionEnv(gym.Env):
             self._attempt_transmission(a1, a2)
             self._attempt_transmission(a2, a1)
 
+    def calculate_infection_probability(source,target):
+        if source.health == "infected" and target.health == "susceptible":
+            base_risk = 0.3
+            protection = (
+                source.mask_usage * 0.6 +
+                target.mask_usage * 0.4 +
+                target.vaccinated * 0.3
+            ) 
+            social_exposure = min(1, target.social_contacts/10)  #normalizing to [0,1]
+            final_risk = base_risk * (1-protection) * social_exposure
+            return max(0, min(1, final_risk))
+        return 0
+    
     def _attempt_transmission(self, source, target):
+        infection_probability = self.calculate_infection_probability(source, target)
+        if random.random() < infection_probability:
+            target.health = "exposed"
+
+
+    """def _attempt_transmission(self, source, target):
         if source.health == "infected" and target.health == "susceptible":
             base_risk = 0.3
             protection = (
@@ -249,7 +356,7 @@ class InfectionEnv(gym.Env):
                 target.vaccinated * 0.3
             )
             if random.random() < base_risk * (1 - protection):
-                target.health = "exposed"
+                target.health = "exposed"   """
 
     def _update_health_status(self):
         for p in self.people:
@@ -281,10 +388,37 @@ class InfectionEnv(gym.Env):
 
     
 
+    def _calculate_economy(self):
+        total = sum(p.income_level * (0.2 + 0.8 * (p.health == "susceptible")) for p in self.people if p.health!= "dead")
+        self.economy = (total / self.num_people) * 100
+
+    # def _calculate_economy(self):
+    #     total = 0.0
+    #     for p in self.people:
+    #         if p.health == "dead":
+    #             contribution = p.income_level * 0.2
+    #         else:
+    #             contribution = p.income_level * (0.2 + 0.8 * (p.health == "susceptible"))
+    #         total += contribution
+    #     self.economy = (total / self.num_people) * 100
+
+    def calculate_average_behaviour(self): #calculates average behaviour every 14 days
+        if self.current_step%14==0:
+            avg_mask_usage = np.mean([p.mask_usage for p in self.people if p.health!="dead"])
+            avg_vaccination = np.mean([p.vaccinated for p in self.people if p.health!="dead"])
+
     def _get_obs(self):
         # statuses = [p.status_code() for p in self.people]
         # return np.array(statuses + [self.economy], dtype=np.float32)
-        pass
+        
+
+        return np.array(
+            [p.status_code() for p in self.people +
+            [p.mask_usage for p in self.people] +
+            [p.vaccinated for p in self.people] +
+            [p.social_contacts for p in self.people] +
+            [self.economy], dtype = np.float32
+        )
 
     def render(self, mode='human'):
         status_map = {

@@ -418,7 +418,7 @@ class InfectionEnv(gym.Env):
         # statuses = [p.status_code() for p in self.people]
         # return np.array(statuses + [self.economy], dtype=np.float32)
 <<<<<<< HEAD
-        pass
+        
 =======
         return np.array(
             [p.status_code() for p in self.people +

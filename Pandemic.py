@@ -25,6 +25,8 @@ class InfectionEnv(gym.Env):
             "trust_beta": 2,
             "skeptic_mode": 0.3
         }
+        self.avg_mask_usage=0.0
+        self.avg_vaccination=0.0
 
     def reset(self, seed=None, options=None):
         # Initialize people with unique IDs and random income levels
@@ -217,7 +219,7 @@ class InfectionEnv(gym.Env):
     # self._update_health_status()
 
         # Update economy
-        self._calculate_economy()
+        #self._calculate_economy()
 
     # # Compute observations and reward
     # obs = self._get_obs()
@@ -240,7 +242,26 @@ class InfectionEnv(gym.Env):
             self._attempt_transmission(a1, a2)
             self._attempt_transmission(a2, a1)
 
+    def calculate_infection_probability(source,target):
+        if source.health == "infected" and target.health == "susceptible":
+            base_risk = 0.3
+            protection = (
+                source.mask_usage * 0.6 +
+                target.mask_usage * 0.4 +
+                target.vaccinated * 0.3
+            ) 
+            social_exposure = min(1, target.social_contacts/10)  #normalizing to [0,1]
+            final_risk = base_risk * (1-protection) * social_exposure
+            return max(0, min(1, final_risk))
+        return 0
+    
     def _attempt_transmission(self, source, target):
+        infection_probability = self.calculate_infection_probability(source, target)
+        if random.random() < infection_probability:
+            target.health = "exposed"
+
+
+    """def _attempt_transmission(self, source, target):
         if source.health == "infected" and target.health == "susceptible":
             base_risk = 0.3
             protection = (
@@ -249,7 +270,7 @@ class InfectionEnv(gym.Env):
                 target.vaccinated * 0.3
             )
             if random.random() < base_risk * (1 - protection):
-                target.health = "exposed"
+                target.health = "exposed"   """
 
     def _update_health_status(self):
         for p in self.people:
@@ -269,6 +290,10 @@ class InfectionEnv(gym.Env):
                         p.health = "dead"
                         p.infected = False
 
+    def _calculate_economy(self):
+        total = sum(p.income_level * (0.2 + 0.8 * (p.health == "susceptible")) for p in self.people if p.health!= "dead")
+        self.economy = (total / self.num_people) * 100
+
     # def _calculate_economy(self):
     #     total = 0.0
     #     for p in self.people:
@@ -279,16 +304,21 @@ class InfectionEnv(gym.Env):
     #         total += contribution
     #     self.economy = (total / self.num_people) * 100
 
-    def _calculate_reward(self, action):
-        infected = sum(p.health == "infected" for p in self.people)
-        dead = sum(p.health == "dead" for p in self.people)
-        policy_cost = 0.2 if action != 0 else 0
-        return 0.6 * self.economy - 1.5 * infected - 5.0 * dead - policy_cost
+    def calculate_average_behaviour(self): #calculates average behaviour every 14 days
+        if self.current_step%14==0:
+            avg_mask_usage = np.mean([p.mask_usage for p in self.people if p.health!="dead"])
+            avg_vaccination = np.mean([p.vaccinated for p in self.people if p.health!="dead"])
 
     def _get_obs(self):
         # statuses = [p.status_code() for p in self.people]
         # return np.array(statuses + [self.economy], dtype=np.float32)
-        pass
+        return np.array(
+            [p.status_code() for p in self.people +
+            [p.mask_usage for p in self.people] +
+            [p.vaccinated for p in self.people] +
+            [p.social_contacts for p in self.people] +
+            [self.economy], dtype = np.float32
+        )
 
     def render(self, mode='human'):
         status_map = {

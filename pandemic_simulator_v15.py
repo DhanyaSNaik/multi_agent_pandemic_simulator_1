@@ -114,11 +114,11 @@ class InfectionEnv(gym.Env):
     def _attempt_transmission(self, source, target):
         if source.health == "infected" and target.health == "susceptible":
             base_risk = 0.5
-            protection = (
+            protection = min(1,(
                 source.mask_usage * 0.6 +
                 target.mask_usage * 0.4 +
                 target.vaccinated * 0.3
-            )
+            ))
             social_exposure = min(1, target.social_contacts / 10)
             final_risk = base_risk * (1 - protection) * social_exposure
             if random.random() < max(0, min(1, final_risk)):

@@ -18,7 +18,7 @@ class InfectionEnv(gym.Env):
         self.num_people = num_people
         self.max_steps = max_steps
         # Action space: single action for testing, but each person interprets it as one of 27 individual choices
-        self.action_space = spaces.Discrete(27)  # Temporary: single action for compatibility
+        self.action_space = spaces.Discrete(18)  # Temporary: single action for compatibility
         # Observation space: [status, mask_usage, vaccinated, social_contacts] per person + economy
         self.observation_space = spaces.Box(
             low=0, high=np.inf, shape=(4 * self.num_people + 1,), dtype=np.float32
@@ -213,16 +213,16 @@ class InfectionEnv(gym.Env):
             self.family_lockdown_compliance = int(np.clip(np.random.normal(5, 2), 0, 10))
             self.family_anti_vax = np.random.choice([0, 1], p=[0.8, 0.2])
 
-            # Q-learning setup: 27 actions for individual combinations
+            # Q-learning setup: 18 actions for individual combinations
             # OPTIMIZED: Use defaultdict for faster lookup of missing keys
             self.q_table = defaultdict(float)  # Returns 0.0 for missing keys automatically
             self.alpha = alpha
             self.gamma = gamma
             self.epsilon = epsilon
             self.decay_rate = decay_rate
-            # Define 27 actions as combinations of mask_level (0-2), contact_level (0-2), vaccine_level (0-2)
+            # Define 18 actions as combinations of mask_level (0-2), contact_level (0-2), vaccine_level (0-2)
             self.actions = [
-                (m, c, v) for m in range(3) for c in range(3) for v in range(3)
+                (m, c, v) for m in range(3) for c in range(3) for v in range(2)
             ]  # List of tuples: (mask_level, contact_level, vaccine_level)
 
         def status_code(self):
@@ -235,13 +235,13 @@ class InfectionEnv(gym.Env):
             state = self.get_state()
             # random action
             if random.uniform(0, 1) < self.epsilon:
-                return random.choice(range(27))  # CHANGED: Return index (0-26) instead of tuple
+                return random.choice(range(18))  # CHANGED: Return index (0-17) instead of tuple
             
             # OPTIMIZED: Find best action based on Q-values
             # Since we're using defaultdict, no need to check if key exists
             best_action = 0
             best_value = float('-inf')
-            for i in range(27):  # Using simple range is faster than enumerating actions list
+            for i in range(18):  # Using simple range is faster than enumerating actions list
                 q_value = self.q_table[(state, i)]  # defaultdict returns 0.0 if key doesn't exist
                 if q_value > best_value:
                     best_value = q_value
@@ -254,7 +254,7 @@ class InfectionEnv(gym.Env):
                 
             # CHANGED: Handle both tuple actions and integer actions
             if isinstance(action, int):
-                # Convert integer (0-26) to action tuple
+                # Convert integer (0-17) to action tuple
                 mask_delta, contact_level, vaccine_level = self.actions[action]
             else:
                 # Action is already a tuple

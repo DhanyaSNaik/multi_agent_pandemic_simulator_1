@@ -220,7 +220,7 @@ class InfectionEnv(gym.Env):
             self.gamma = gamma
             self.epsilon = epsilon
             self.decay_rate = decay_rate
-            # Define 18 actions as combinations of mask_level (0-2), contact_level (0-2), vaccine_level (0-2)
+            # Define 18 actions as combinations of mask_level (0-2), contact_level (0-2), vaccine_level (0-1)
             self.actions = [
                 (m, c, v) for m in range(3) for c in range(3) for v in range(2)
             ]  # List of tuples: (mask_level, contact_level, vaccine_level)

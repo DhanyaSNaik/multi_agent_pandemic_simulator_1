@@ -326,7 +326,7 @@ class InfectionEnv(gym.Env):
                 
             # OPTIMIZED: Find maximum future Q-value using indices
             # Using defaultdict means we don't need to check for key existence
-            max_future_q = max([self.q_table[(next_state, a_idx)] for a_idx in range(27)])
+            max_future_q = max([self.q_table[(next_state, a_idx)] for a_idx in range(18)])
             
             # OPTIMIZED: Use defaultdict for simpler lookup
             current_q = self.q_table[(state, action_idx)]

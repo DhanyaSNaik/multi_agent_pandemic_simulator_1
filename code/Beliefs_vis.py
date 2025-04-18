@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+Run and Visualize initialization of beliefs
+--------------------------------------------
+This script creates visualization for random initialization of the beliefs 
+
+NOTE: This header and parts of the code were written with the assistance of generative AI.
+
+Results are saved to a PNG file with a timestamp in the filename.
+
+Authors: rootma21, VivekRkay24, saswata0502, DhanyaSNaik
+Last updated: April 18th, 2025
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 

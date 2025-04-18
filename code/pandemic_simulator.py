@@ -101,7 +101,7 @@ class InfectionEnv(gym.Env):
         
         return obs, avg_reward, terminated, truncated, {}
 
-    def _get_obs(self):
+    def _get_obs(self): #returns the current state
         statuses = [p.status_code() for p in self.people]
         masks = [p.mask_usage for p in self.people]
         vaccines = [p.vaccinated for p in self.people]
@@ -109,7 +109,7 @@ class InfectionEnv(gym.Env):
         return np.concatenate([statuses, masks, vaccines, contacts], dtype=np.float32)
 
     def _simulate_interactions(self):
-        """ right now, everyone in the network is connected and can infect everyone else """
+        # right now, everyone in the network is connected and can infect everyone else 
         pairs = [(i, j) for i in range(self.num_people) for j in range(i + 1, self.num_people)]
         random.shuffle(pairs)
         for i, j in pairs:
@@ -117,7 +117,7 @@ class InfectionEnv(gym.Env):
             self._attempt_transmission(a1, a2)
             self._attempt_transmission(a2, a1)
 
-    def _attempt_transmission(self, source, target):
+    def _attempt_transmission(self, source, target): #calculates an infection probability
         if source.health == "infected" and target.health == "susceptible":
             base_risk = 0.5
             protection = min(1,(
@@ -173,7 +173,7 @@ class InfectionEnv(gym.Env):
                     p.health = "susceptible"
                     p.recovered = False
 
-    def _update_averages(self):
+    def _update_averages(self): # finds average of mask_usage and vaccination status
         living_people = [p for p in self.people if p.health != "dead"]
         if living_people:
             self.avg_mask_usage = np.mean([p.mask_usage for p in living_people])
@@ -182,7 +182,7 @@ class InfectionEnv(gym.Env):
             self.avg_mask_usage = 0.0
             self.avg_vaccination = 0.0
 
-    def render(self, mode='human'):
+    def render(self, mode='human'): # displays current status of the simulation
         status_map = {"susceptible": "S", "exposed": "E", "infected": "I", "recovered": "R", "dead": "D"}
         print(f"\nDay {self.current_step}")
         for p in self.people:

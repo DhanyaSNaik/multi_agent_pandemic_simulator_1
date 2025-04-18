@@ -89,7 +89,7 @@ pip install -r requirements.txt
     python cohorts_viz.py
     ```
 # Contributing
-   - Contributions are welcome. Feel free to fork the repository and submit a pull request
+Contributions are welcome. Feel free to fork the repository and submit a pull request
     
 # Acknowledgements
-- Project developed as part of CS5100: Foundations of Artificial Intelligence
+ Project developed as part of CS5100: Foundations of Artificial Intelligence
